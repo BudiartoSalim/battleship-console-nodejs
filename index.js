@@ -22,7 +22,7 @@ gameStart(parseInt(process.argv[2]));
 
 //MAIN FUNCTION/ENTRY POINT IS HERE//
 function gameStart(ammoCount){
-    if (ammoCount < 1 || ammoCount > 100 || typeof ammoCount !== 'number' || isNaN(ammoCount)){
+    if (ammoCount < 1 || ammoCount > (boardSize * boardSize) || typeof ammoCount !== 'number' || isNaN(ammoCount)){
         return console.log("Invalid number of shots input, please put valid number of shots");
     }
 
