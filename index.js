@@ -1,48 +1,58 @@
 //core//
-//due to the scope of the app, each ships does not need each class,
-//since the traits relevant is the length, and quantity deployed in fleet
-class fleet { 
-    constructor(){
-        this._destroyer = {
-            shipLength: 2,
-            quantity: 1,
-            shipCode: "D"
-        };
-        this._cruiser = {
-            shipLength: 3,
-            quantity: 1,
-            shipCode: "C"
-        };
-        this._battleship = {
-            shipLength: 4,
-            quantity: 1,
-            shipCode: "B"
-        };
-        this._carrier=  {
-            shipLength: 5,
-            quantity: 1,
-            shipCode: "V"
-        };
+const Fleet = require ("./Fleet.js")
+
+const boardSize = 10; //board size is always a square, 10 means 10x10 grid; global var
+let hitCount = 0;
+let missCount = 0;
+let shotCount = 0;
+let numberOfEnemyGrid = 0;
+let kapal = new Fleet();
+let board = fillEnemies(generateBoard(), kapal); //global variable
+//end of globals initialization
+
+////////////====HOW TO PLAY====////////////
+//input parameter of any number between 1 to 100 in the gameStart function
+//parameter input is how many shots you have
+//INPUT THE PARAMETER THROUGH PROCESS ARGV 
+//for example, in terminal, type "node index.js 20" for 20 shots
+//every shots is randomized, and will not hit the same place twice
+//game ends when you ran out of shots OR all ships are sunk
+///////////////////////////////////////////
+gameStart(parseInt(process.argv[2]));
+
+//MAIN FUNCTION/ENTRY POINT IS HERE//
+function gameStart(ammoCount){
+    if (ammoCount < 1 || ammoCount > 100 || typeof ammoCount !== 'number' || isNaN(ammoCount)){
+        return console.log("Invalid number of shots input, please put valid number of shots");
     }
-    countTotalShip(){ //counts total ship in current fleet obj
-        let output = 0;
-        for (let property in this){
-            output += this[property].quantity;
+
+    printBoard();
+    for (let i = 0; i < ammoCount; i++){
+        sleep(500);
+        console.clear();
+        shoot();
+        if (hitCount >= numberOfEnemyGrid){
+            console.log(`All enemy ships is sunk, you win!`);
+            break;
         }
-        return output;
     }
 
+    if (hitCount < numberOfEnemyGrid){
+        console.log(`You ran out of ammunition, game over!`)
+    }
+    console.log(`Out of ${shotCount} shots, you missed ${missCount} times!`);
 }
-//GLOBALS//
-let kapal = new fleet();
-let board = generateBoard();
-console.log(kapal.countTotalShip());
-console.log(fillEnemies(board, kapal));
 
- 
+function printBoard(){
+    console.log("--------------------------------------");
+    for (let i = 0; i < boardSize; i++){
+        console.log(board[i].join(" | "));
+        console.log("--------------------------------------");
+    }
+}
+//console.log (board.join("\r\n"));
 
 function generateBoard (){ //generates board in form of 2d Array
-    const boardSize = 10; //board size is always a square, 10 means 10x10 grid
     let grid = [];
     for (let i = 0; i < boardSize; i++){
         grid.push([]);
@@ -51,15 +61,15 @@ function generateBoard (){ //generates board in form of 2d Array
         }
     }
     return grid;
-}
+} //returns empty grid/board
 
-function fillEnemies(board, fleet){ //fills enemies in the generated board
+function fillEnemies(inputGrid, fleet){ //fills enemies in the generated board
     let grid;
     let enemyCount = fleet.countTotalShip();
     let filled = false;
     while (filled === false){
         filled = true;
-        grid = board.slice(0);
+        grid = inputGrid.slice(0);
         for (let ship in fleet){
             for (let i = 0; i < fleet[ship].quantity; i++){//loop deciding quantity placed
                 let validLocationArr = [];
@@ -98,10 +108,14 @@ function fillEnemies(board, fleet){ //fills enemies in the generated board
                         } //END OF BASE POSSIBLE SPACES LOOPS
                     }
                 }
-                if (validLocationArr.length < 1){
-                    filled = false;
-                }
+                
+                if (validLocationArr.length < 1){ //to make sure all ships can be placed
+                    filled = false; // this safeguard is for cases of no possible location
+                }                   //will restart the whole process from empty grid
+                
+                //code below randomly choose 1 of the possible location as index of coord arr
                 let chosenCoordinate = Math.floor(Math.random() * validLocationArr.length);
+                //code below places the actual ship on the chosen coord
                 for (let v = 0; v < fleet[ship].shipLength; v++){
                     if (horizontalPlacement){
                         grid[validLocationArr[chosenCoordinate][0]][validLocationArr[chosenCoordinate][1]] = fleet[ship].shipCode;
@@ -110,14 +124,58 @@ function fillEnemies(board, fleet){ //fills enemies in the generated board
                         grid[validLocationArr[chosenCoordinate][0]][validLocationArr[chosenCoordinate][1]] = fleet[ship].shipCode;
                         validLocationArr[chosenCoordinate][0]++;
                     }
+                    numberOfEnemyGrid++;
                 }
-                console.log(grid.join("\r\n"))
-                console.log("=======")
             }
         }
-    }
-}
+    } //end of while loop (just a safeguard if in case there board can't be filled with next ship)
+    return grid;
+} //returns board already filled with the enemies defined in Fleet class
 
+function shoot(){
+    let alreadyShot = false;
+    while (alreadyShot === false){
+        let verticalCoord = Math.floor(Math.random()*boardSize);
+        let horizontalCoord = Math.floor(Math.random()*boardSize);
+        console.clear();
+        switch (board[verticalCoord][horizontalCoord]) {
+            case " ":
+                console.log("You missed your shot!");
+                board[verticalCoord][horizontalCoord] = "/";
+                missCount++;
+                alreadyShot = true;
+                break;
+            case "D":
+                console.log("You hit a Destroyer!");
+                board[verticalCoord][horizontalCoord] ="x";
+                hitCount++;
+                alreadyShot = true;
+                break;
+            case "C":
+                console.log("You hit a Cruiser!");
+                board[verticalCoord][horizontalCoord] = "x";
+                hitCount++;
+                alreadyShot = true;
+                break;
+            case "B":
+                console.log("You hit a Battleship!");
+                board[verticalCoord][horizontalCoord] = "x";
+                hitCount++;
+                alreadyShot = true;
+                break;
+            case "V":
+                console.log("You hit an Aircraft Carrier!");
+                board[verticalCoord][horizontalCoord] = "x";
+                hitCount++;
+                alreadyShot = true;
+                break;
+            default:
+                break;
+        }     
+        printBoard();
+    }
+    shotCount++;
+}
 
 
 
